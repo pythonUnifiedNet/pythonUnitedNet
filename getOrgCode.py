@@ -1,6 +1,6 @@
 import cx_Oracle as cx
 import re
-from backports import configparser
+import configparser
 
 def generate_namedtuple(cur):
     from collections import namedtuple

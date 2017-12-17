@@ -2,7 +2,7 @@
 import os
 import pymysql
 import cx_Oracle as cx
-from backports import configparser
+import configparser
 from pip._vendor.distlib.compat import raw_input
 
 
@@ -42,7 +42,9 @@ def serSLM():
         conn = cx.connect(bsp_user+'/'+bsp_pwd+'@'+bshost+'/orcl')
         cursor = conn.cursor()
 
-        num = raw_input("请输入要查询的内容:0、退出  1、查询所有数据库  2、查询对应库里所有的表  3或任意键、根据受理编码查询submit表和failure表   ")
+        num = raw_input("请输入要查询的内容:0、退出  1、查询所有数据库  2、查询对应库里所有的表  3或任意键、根据受理编码查询submit表和failure表  4、根据受理编码查询failure表 ")
+        cnx = pymysql.connect(log_host, log_user, log_pwd, "dv_db_log")
+        cur = cnx.cursor()
         if num == '0':
             os._exit(0)
         if num == '1':
@@ -78,8 +80,6 @@ def serSLM():
 
                 if region == "":
                     region = "420000"
-                cnx = pymysql.connect(log_host, log_user, log_pwd, "dv_db_log")
-                cur = cnx.cursor()
 
                 print("正在查找log_submit_" + region + "表.....")
                 cur.execute("select * from log_submit_" + region + " where code = '" + slbm + "'")
@@ -106,9 +106,27 @@ def serSLM():
                 else:
                     for r in generate_dicts(cur):
                         print(r)
+                    print("开始查询log_submit_failure表......")
+                    cur.execute("select * from log_submit_failure  where code = '" + slbm + "'")
+                    if cur.rowcount > 1:
+                        print("查询到报错信息!")
+                        for r in generate_dicts(cur):
+                            print(r)
+                    else:
+                        print("检测无报错,成功推送!")
                     serSLM()
             else:
                 print("请输入29位受理码.....")
                 serSLM()
-
+        if num=="4":
+            slbm = raw_input("请输入29位受理编码:   ")
+            print("开始查询log_submit_failure表......")
+            cur.execute("select * from log_submit_failure  where code = '" + slbm + "'")
+            if cur.rowcount == 0:
+                print("faiure表无数据.....")
+                serSLM()
+            else:
+                for r in generate_dicts(cur):
+                    print(r)
+                serSLM()
 serSLM()
